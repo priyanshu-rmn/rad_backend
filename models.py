@@ -6,45 +6,45 @@ from sqlmodel import Field, Relationship, SQLModel
 
 # Enum for Position Status
 class PositionStatusEnum(str, Enum):
-    DRAFT = "draft"
-    OPEN = "open"
-    CLOSED = "closed"
-    IN_PROGRESS = "in_progress"
-    CANCELLED = "cancelled"
-    FILLED = "filled"
+    DRAFT = "DRAFT"
+    OPEN = "OPEN"
+    CLOSED = "CLOSED"
+    IN_PROGRESS = "IN_PROGRESS"
+    CANCELLED = "CANCELLED"
+    FILLED = "FILLED"
 
 # Enum for Application Status
 class ApplicationStatusEnum(str, Enum):
-    APPLIED = "applied"
-    WITHDRAWN = "withdrawn"
-    IN_PROGRESS = "in_progress"
-    REJECTED = "rejected"
-    OFFERED = "offered"
-    ACCEPTED = "accepted"
-    DECLINED = "declined"
+    APPLIED = "APPLIED"
+    WITHDRAWN = "WITHDRAWN"
+    IN_PROGRESS = "IN_PROGRESS"
+    REJECTED = "REJECTED"
+    OFFERED = "OFFERED"
+    ACCEPTED = "ACCEPTED"
+    DECLINED = "DECLINED"
 
 # Enum for Hiring Stage Names
 class HiringStageNameEnum(str, Enum):
-    RESUME_SCREENING = "resume_screening"
-    TEST_SCREENING = "test_screening"
-    PHONE_SCREENING = "phone_screening"
-    TECHNICAL_INTERVIEW_1 = "technical_interview_1"
-    TECHNICAL_INTERVIEW_2 = "technical_interview_2"
-    HR_MANAGERIAL_INTERVIEW = "hr_managerial_interview"
-    OFFER_NEGOTIATION = "offer_negotiation"
+    RESUME_SCREENING = "RESUME_SCREENING"
+    TEST_SCREENING = "TEST_SCREENING"
+    PHONE_SCREENING = "PHONE_SCREENING"
+    TECHNICAL_INTERVIEW_1 = "TECHNICAL_INTERVIEW_1"
+    TECHNICAL_INTERVIEW_2 = "TECHNICAL_INTERVIEW_2"
+    HR_MANAGERIAL_INTERVIEW = "HR_MANAGERIAL_INTERVIEW"
+    OFFER_NEGOTIATION = "OFFER_NEGOTIATION"
 
 # Enum for Stage Status
 class StageStatusEnum(str, Enum):
-    PASSED = "passed"
-    FAILED = "failed"
+    PASSED = "PASSED"
+    FAILED = "FAILED"
 
 # Enum for Departments
 class DepartmentEnum(str, Enum):
-    ENGINEERING = "Engineering"
-    MARKETING = "Marketing"
-    SALES = "Sales"
-    HUMAN_RESOURCES = "Human Resources"
-    FINANCE = "Finance"
+    ENGINEERING = "ENGINEERING"
+    MARKETING = "MARKETING"
+    SALES = "SALES"
+    HUMAN_RESOURCES = "HUMAN_RESOURCES"
+    FINANCE = "FINANCE"
 
 # Application Table
 class Application(SQLModel, table=True):

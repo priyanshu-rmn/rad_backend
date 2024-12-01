@@ -1,11 +1,24 @@
 from datetime import datetime
 import json
+import os
 from random import choice
 from faker import Faker
 from loguru import logger as log
 from models import Application, ApplicationStatusEnum, DepartmentEnum, HiringStageNameEnum, PositionStatusEnum, StageStatusEnum
 
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(dotenv_path=Path(".env"))
+
 # Initialize Faker
+USERS_MOCK_DATA=os.getenv("USERS_MOCK_DATA")
+POSITIONS_MOCK_DATA=os.getenv("POSITIONS_MOCK_DATA")
+APPLICATIONS_MOCK_DATA=os.getenv("APPLICATIONS_MOCK_DATA")
+STAGES_MOCK_DATA=os.getenv("STAGES_MOCK_DATA")
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+
 faker = Faker()
 users_data = []
 positions_data = []
@@ -27,7 +40,7 @@ def create_mock_users(n: int):
         }
         users_data.append(user)
         
-    save(users_data, "./mock/users.json")
+    save(users_data, USERS_MOCK_DATA)
  
 # Generate mock user data
 def create_mock_positions(n: int):
@@ -41,14 +54,23 @@ def create_mock_positions(n: int):
         }
         positions_data.append(user)
         
-    save(positions_data, "./mock/positions.json")
+    save(positions_data, POSITIONS_MOCK_DATA)
         
 
+# Ensure candidate_id and position_id combinations are unique in applications_data
+def generate_unique_candidate_position_pair(users_data, positions_data, applications_data):
+    existing_pairs = {(app["candidate_id"], app["position_id"]) for app in applications_data}
+    while True:
+        candidate_id = choice(users_data)["id"]
+        position_id = choice(positions_data)["id"]
+        if (candidate_id, position_id) not in existing_pairs:
+            return candidate_id, position_id
+        
 # Generate mock applications data
 def create_mock_applications(n: int):
     for _ in range(n):
-        candidate_id = choice(users_data)["id"]
-        position_id = choice(positions_data)["id"]
+        candidate_id, position_id = generate_unique_candidate_position_pair(users_data, positions_data, applications_data)
+        
         applied_at = faker.date_time_this_year()
         last_updated = faker.date_time_between(start_date=applied_at)
         
@@ -92,7 +114,7 @@ def create_mock_applications(n: int):
         applications_data.append(application)
     
     # TODO: NUMBER_OF_OPENINGS FOR A POSITION. IN MOCK DATA x CANDIDATES MAY BE FILLED FOR A POSITION 
-    save(applications_data, "./mock/applications.json")
+    save(applications_data, APPLICATIONS_MOCK_DATA)
 
 
 def create_mock_stages(application : Application):
@@ -127,7 +149,7 @@ def create_mock_stages(application : Application):
         if stage == application["last_stage_name"]:
             break
     
-    save(stages_data, "./mock/stages.json")
+    save(stages_data, STAGES_MOCK_DATA)
 
 if __name__ == "__main__":
     create_mock_users(50)
