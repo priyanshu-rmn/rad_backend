@@ -11,8 +11,26 @@ from db_utils import check_db_connection
 from models import Application, ApplicationStatusEnum, PositionStatusEnum, User, Position     
 
 app = FastAPI()
+#---------------------------CORS setup-------------------
+from fastapi.middleware.cors import CORSMiddleware
+
+origins = [
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 #----------------------Database connection-----------------------------
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(dotenv_path=Path(".env"))
 DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL, echo=True)
 
