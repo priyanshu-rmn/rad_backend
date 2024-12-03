@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 
 SECRET_KEY = "JWT_SECRET"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 10
+ACCESS_TOKEN_EXPIRE_MINUTES = 100
 
 def create_access_token(data: dict):
     to_encode = data.copy()
