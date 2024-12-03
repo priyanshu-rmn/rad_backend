@@ -79,8 +79,8 @@ def register(user: Credentials, db: SessionDep):
     return {"message": "User created successfully"}
 
 @app.post("/login/", )
-async def login(user:Annotated[OAuth2PasswordRequestForm, Depends()], db: SessionDep):
-    log.info("Logging in ...", Credentials)
+async def login(user:Credentials, db: SessionDep):
+    log.info("Logging in ...", user)
     db_user = db.exec(select(User).where(User.email == user.username)).first()
     if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(
@@ -140,12 +140,17 @@ async def get_dashboard_data(
     all_application_status = get_application_status_data(db, filters); 
 
     response = {
+        'all_positions': all_positions,
+        'all_departments' : [department.value for department in DepartmentEnum],
         'candidate_stage_counts': get_candidate_stage_data(db, filters),
         'depts_time_to_hire': get_time_to_hire_all_depts(db, filters),
         'offer_status': {"OFFER_ACCEPTED" : all_application_status["ACCEPTED"], "OFFER_DECLINED": all_application_status["DECLINED"], "OFFER_PENDING": all_application_status["OFFERED"]},
         'application_status_count' : {"WAITING": all_application_status["IN_PROGRESS"], "NO_ACTION": all_application_status["APPLIED"], "NEW_APPLICANTS":get_recent_applications_count(db, filters)}
     }
-    response['candidate_stage_counts']["TOTAL_APPLICATIONS"] = response['candidate_stage_counts']["RESUME_SCREENING"] + all_application_status["APPLIED"]
+    response['candidate_stage_counts'] = {
+        "TOTAL_APPLICATIONS": response['candidate_stage_counts']["RESUME_SCREENING"] + all_application_status["APPLIED"],
+        **response['candidate_stage_counts']  # Unpacking the rest of the items
+    }
 
     return response
 #----------------------START_UP-----------------------------
