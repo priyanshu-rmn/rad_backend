@@ -2,7 +2,7 @@ from datetime import datetime
 import os
 from typing import Annotated, Optional 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import SQLModel, Session, create_engine, select, func
 from loguru import logger as log
 
@@ -42,7 +42,7 @@ def get_session():
         
 SessionDep = Annotated[Session, Depends(get_session)]
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login/")
 def get_current_user(token: str = Depends(oauth2_scheme)):
     payload = verify_access_token(token)
     if payload is None:
@@ -58,29 +58,29 @@ UserDep = Annotated[dict, Depends(get_current_user)]
 # --------- AUTH -----------------
 from pydantic import BaseModel
 class Credentials(BaseModel):
-    email: str
+    username: str
     password: str
     
 @app.post("/register/")
 def register(user: Credentials, db: SessionDep):
     log.info("Registering ...", Credentials)
-    db_user = db.exec(select(User).where(User.email == user.email)).first()
+    db_user = db.exec(select(User).where(User.email == user.username)).first()
     if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             message="email already registered",
         )
     hashed_password = hash_password(user.password)
-    new_user = User(name="admin", email=user.email, hashed_password=hashed_password)
+    new_user = User(name="admin", email=user.username, hashed_password=hashed_password)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return {"message": "User created successfully"}
 
-@app.post("/login/")
-async def login(user:Credentials, db: SessionDep):
+@app.post("/login/", )
+async def login(user:Annotated[OAuth2PasswordRequestForm, Depends()], db: SessionDep):
     log.info("Logging in ...", Credentials)
-    db_user = db.exec(select(User).where(User.email == user.email)).first()
+    db_user = db.exec(select(User).where(User.email == user.username)).first()
     if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
