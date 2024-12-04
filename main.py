@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlmodel import SQLModel, Session, create_engine, select
 from loguru import logger as log
 
-from KPIs import get_all_positions, get_application_status_data, get_candidate_stage_data, get_recent_applications_count, get_time_to_hire_all_depts
+from KPIs import application_per_job_posting, get_all_positions, get_application_status_data, get_candidate_stage_data, get_recent_applications_count, get_time_to_hire_all_depts
 from auth import create_access_token, hash_password, verify_access_token, verify_password
 from db_utils import check_db_connection
 from models import Application, ApplicationStatusEnum, DepartmentEnum, PositionStatusEnum, User, Position     
@@ -145,7 +145,8 @@ async def get_dashboard_data(
         'candidate_stage_counts': get_candidate_stage_data(db, filters),
         'depts_time_to_hire': get_time_to_hire_all_depts(db, filters),
         'offer_status': {"OFFER_ACCEPTED" : all_application_status.get("ACCEPTED",0), "OFFER_DECLINED": all_application_status.get("DECLINED",0), "OFFER_PENDING": all_application_status.get("OFFERED",0)},
-        'application_status_count' : {"WAITING": all_application_status.get("IN_PROGRESS",0), "NO_ACTION": all_application_status.get("APPLIED",0), "NEW_APPLICANTS":get_recent_applications_count(db, filters)}
+        'application_status_count' : {"WAITING": all_application_status.get("IN_PROGRESS",0), "NO_ACTION": all_application_status.get("APPLIED",0), "NEW_APPLICANTS":get_recent_applications_count(db, filters)},
+        'application_per_job_posting': application_per_job_posting(db,filters)
     }
     response['candidate_stage_counts'] = {
         "TOTAL_APPLICATIONS": response['candidate_stage_counts'].get("RESUME_SCREENING", 0) + all_application_status.get("APPLIED",0),

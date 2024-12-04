@@ -81,3 +81,20 @@ def get_recent_applications_count(db: Session, filters):
     ).one()
     
     return recent_count
+
+
+def application_per_job_posting(db: Session, filters) :
+    results = db.exec(
+        select(Position.title, func.count())
+        .join(Application, Application.position_id == Position.id)
+        .filter(
+            Position.department.in_(filters["departments"]),
+            Position.id.in_(filters["position_id"]),
+            Application.applied_at >= filters["start_date"],
+            Application.applied_at <= filters["end_date"]
+        )
+        .group_by(Position.title)
+    ).all()
+
+    return {title: count for title,count in results}
+
