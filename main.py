@@ -33,7 +33,7 @@ from pathlib import Path
 
 load_dotenv(dotenv_path=Path(".env"))
 DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL)
 
 
 #using fastapi dependency
@@ -108,8 +108,8 @@ def protected_route(current_user: UserDep):
 async def get_dashboard_data(
     db: SessionDep,
     current_user: UserDep,
-    positions: Optional[list[int]] = Query(None, description="Filter by position IDs"),
-    departments: Optional[list[str]] = Query(None, description="Filter by department IDs"),
+    positions: Optional[list[int]] = Query(None, description="Filter by position IDs", alias="positions[]"),
+    departments: Optional[list[str]] = Query(None, description="Filter by department IDs", alias="departments[]"),
     start_date: Optional[datetime] = Query(None, description="Filter data after this date"),
     end_date: Optional[datetime] = Query(None, description="Filter data before this date"),
 ):
@@ -144,11 +144,11 @@ async def get_dashboard_data(
         'all_departments' : [department.value for department in DepartmentEnum],
         'candidate_stage_counts': get_candidate_stage_data(db, filters),
         'depts_time_to_hire': get_time_to_hire_all_depts(db, filters),
-        'offer_status': {"OFFER_ACCEPTED" : all_application_status["ACCEPTED"], "OFFER_DECLINED": all_application_status["DECLINED"], "OFFER_PENDING": all_application_status["OFFERED"]},
-        'application_status_count' : {"WAITING": all_application_status["IN_PROGRESS"], "NO_ACTION": all_application_status["APPLIED"], "NEW_APPLICANTS":get_recent_applications_count(db, filters)}
+        'offer_status': {"OFFER_ACCEPTED" : all_application_status.get("ACCEPTED",0), "OFFER_DECLINED": all_application_status.get("DECLINED",0), "OFFER_PENDING": all_application_status.get("OFFERED",0)},
+        'application_status_count' : {"WAITING": all_application_status.get("IN_PROGRESS",0), "NO_ACTION": all_application_status.get("APPLIED",0), "NEW_APPLICANTS":get_recent_applications_count(db, filters)}
     }
     response['candidate_stage_counts'] = {
-        "TOTAL_APPLICATIONS": response['candidate_stage_counts']["RESUME_SCREENING"] + all_application_status["APPLIED"],
+        "TOTAL_APPLICATIONS": response['candidate_stage_counts'].get("RESUME_SCREENING", 0) + all_application_status.get("APPLIED",0),
         **response['candidate_stage_counts']  # Unpacking the rest of the items
     }
 
