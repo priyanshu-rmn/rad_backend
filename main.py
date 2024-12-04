@@ -3,16 +3,21 @@ import os
 from typing import Annotated, Optional 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from sqlmodel import SQLModel, Session, create_engine, select
+from sqlmodel import Session, create_engine, select
 from loguru import logger as log
 
 from KPIs import application_per_job_posting, get_all_positions, get_application_status_data, get_candidate_stage_data, get_recent_applications_count, get_time_to_hire_all_depts
 from auth import create_access_token, hash_password, verify_access_token, verify_password
 from db_utils import check_db_connection
-from models import Application, ApplicationStatusEnum, DepartmentEnum, PositionStatusEnum, User, Position     
+from models import  DepartmentEnum, User     
+from dotenv import load_dotenv
+from pathlib import Path
+from pydantic import BaseModel
+
 
 app = FastAPI()
-#---------------------------CORS setup-------------------
+
+#---------------------------CORS setup--------------------------
 from fastapi.middleware.cors import CORSMiddleware
 
 origins = [
@@ -28,13 +33,11 @@ app.add_middleware(
 )
 
 #----------------------Database connection-----------------------------
-from dotenv import load_dotenv
-from pathlib import Path
 
 load_dotenv(dotenv_path=Path(".env"))
 DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DATABASE_URL)
 
+engine = create_engine(DATABASE_URL)
 
 #using fastapi dependency
 def get_session():
@@ -42,6 +45,11 @@ def get_session():
         yield db
         
 SessionDep = Annotated[Session, Depends(get_session)]
+
+# -------------------------- AUTH ----------------------------------
+class Credentials(BaseModel):
+    username: str
+    password: str
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login/")
 def get_current_user(token: str = Depends(oauth2_scheme)):
@@ -54,14 +62,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
     return payload  
 
 UserDep = Annotated[dict, Depends(get_current_user)]
-
-
-# --------- AUTH -----------------
-from pydantic import BaseModel
-class Credentials(BaseModel):
-    username: str
-    password: str
     
+
+
+#----------------------ROUTES-----------------------------
 @app.post("/register/")
 def register(user: Credentials, db: SessionDep):
     log.info("Registering ...", Credentials)
@@ -93,7 +97,6 @@ async def login(user:Credentials, db: SessionDep):
 
 
 
-#----------------------ROUTES-----------------------------
 @app.get("/")
 async def home():
     return {"message": "Hello World"}
@@ -154,6 +157,7 @@ async def get_dashboard_data(
     }
 
     return response
+
 #----------------------START_UP-----------------------------
 @app.on_event("startup")
 def on_startup():
@@ -167,175 +171,4 @@ def on_startup():
             log.info(connection_info["status"])
             log.error(connection_info["error"])
             exit()
-    
-    #create db and tables
-    # SQLModel.metadata.create_all(engine)
-
-
-# @app.get("/time_to_fill/")
-# async def time_to_fill(
-#     db: SessionDep,
-#     current_user: UserDep,
-#     start_date: Optional[datetime] = Query(None, description="Filter positions created after this date"),
-#     end_date: Optional[datetime] = Query(None, description="Filter positions created before this date"),
-# ):
-#     log.info(current_user);
-    
-#     # Build the base query
-#     query = select(Position).where(Position.status == PositionStatusEnum.FILLED)
-
-#     # Apply start_date filter if provided
-#     if start_date:
-#         query = query.where(Position.created_at >= start_date)
-
-#     # Apply end_date filter if provided
-#     if end_date:
-#         query = query.where(Position.created_at <= end_date)
-
-#     # Execute the query and fetch results
-#     results = db.exec(query).all()
-
-#     return results
-
-
-
-# @app.get("/time_to_hire/")
-# async def time_to_hire(
-#     db: SessionDep,
-#     current_user: UserDep,
-    
-# ):
-#     pass
-
-
-# @app.get("/candidate_pipeline/")
-# async def candidate_pipeline_metric(
-#     db: SessionDep,
-#     # current_user: UserDep,
-#     application_status: Optional[list[str]] = Query(None, description="Filter by application status"),
-#     positions: Optional[list[int]] = Query(None, description="Filter by position IDs"),
-#     applied_at_start: Optional[datetime] = Query(None, description="Filter applications applied after this date"),
-#     applied_at_end: Optional[datetime] = Query(None, description="Filter applications applied before this date"),
-#     last_updated_start: Optional[datetime] = Query(None, description="Filter applications updated after this date"),
-#     last_updated_end: Optional[datetime] = Query(None, description="Filter applications updated before this date"),
-# ):
-#     print(application_status)
-#     # Build the base query
-#     query = (
-#         select(
-#             Application.last_stage_name,
-#             func.count().label("count")
-#         )
-#         .group_by(Application.last_stage_name)
-#     )
-#     # Apply filters based on query parameters
-#     if application_status:
-#         query = query.where(Application.status.in_(application_status))
-#     if positions:
-#         query = query.where(Application.position_id.in_(positions))
-#     if applied_at_start:
-#         query = query.where(Application.applied_at >= applied_at_start)
-#     if applied_at_end:
-#         query = query.where(Application.applied_at <= applied_at_end)
-#     if last_updated_start:
-#         query = query.where(Application.last_updated >= last_updated_start)
-#     if last_updated_end:
-#         query = query.where(Application.last_updated <= last_updated_end)
-
-#     # Execute the query
-#     log.critical(query)
-#     results = db.exec(query)
-    
-#     response = [{"last_stage_name": row[0] if row[0] else "YET_TO_START", "count": row[1]} for row in results]
-
-#     return response
-    
-
-# @app.get("/offer_details/")
-# async def offer_details(
-#     db: SessionDep,
-#     # current_user: UserDep,
-#     positions: Optional[list[int]] = Query(None, description="Filter by position IDs"),
-#     applied_at_start: Optional[datetime] = Query(None, description="Filter applications applied after this date"),
-#     applied_at_end: Optional[datetime] = Query(None, description="Filter applications applied before this date"),
-#     last_updated_start: Optional[datetime] = Query(None, description="Filter applications updated after this date"),
-#     last_updated_end: Optional[datetime] = Query(None, description="Filter applications updated before this date"),
-# ):
-#     # Build the base query
-#     query = (
-#         select(
-#             Application.status,
-#             func.count().label("count")
-#         )
-#         .where(Application.status.in_([ApplicationStatusEnum.OFFERED, ApplicationStatusEnum.ACCEPTED, ApplicationStatusEnum.DECLINED]))
-#         .group_by(Application.status)
-#     )
-#     # Apply filters based on query parameters
-    
-#     if positions:
-#         query = query.where(Application.position_id.in_(positions))
-#     if applied_at_start:
-#         query = query.where(Application.applied_at >= applied_at_start)
-#     if applied_at_end:
-#         query = query.where(Application.applied_at <= applied_at_end)
-#     if last_updated_start:
-#         query = query.where(Application.last_updated >= last_updated_start)
-#     if last_updated_end:
-#         query = query.where(Application.last_updated <= last_updated_end)
-
-#     # Execute the query
-#     log.critical(query)
-#     results = db.exec(query)
-#     response = [{"status": row[0] , "count": row[1]} for row in results]
-
-#     return response
-    
-
-# @app.get("/candidate_waiting_noaction_new/")
-# async def candidates_waiting(  
-#     db: SessionDep,                             
-#     # current_user: UserDep,
-#     positions: Optional[list[int]] = Query(None, description="Filter by position IDs"),
-#     applied_at_start: Optional[datetime] = Query(None, description="Filter applications applied after this date"),
-#     applied_at_end: Optional[datetime] = Query(None, description="Filter applications applied before this date"),
-#     last_updated_start: Optional[datetime] = Query(None, description="Filter applications updated after this date"),
-#     last_updated_end: Optional[datetime] = Query(None, description="Filter applications updated before this date"),
-# ):
-#     # Build the base query
-#     query = (
-#         select(
-#             Application.status,
-#             Application.last_updated,
-#             func.count().label("count")
-#         )
-#         .where(Application.status.in_([ApplicationStatusEnum.IN_PROGRESS, ApplicationStatusEnum.APPLIED]))
-#         .group_by(Application.status, Application.last_updated)
-#     )
-#     # Apply filters based on query parameters
-    
-#     if positions:
-#         query = query.where(Application.position_id.in_(positions))
-#     if applied_at_start:
-#         query = query.where(Application.applied_at >= applied_at_start)
-#     if applied_at_end:
-#         query = query.where(Application.applied_at <= applied_at_end)
-#     if last_updated_start:
-#         query = query.where(Application.last_updated >= last_updated_start)
-#     if last_updated_end:
-#         query = query.where(Application.last_updated <= last_updated_end)
-
-#     # Execute the query
-#     log.critical(query)
-#     results = db.exec(query)
-#     response = [{"status": row[0] , "count": row[1]} for row in results]
-
-#     return response
-
-
-
-# @app.get("/application_details/") 
-# async def application_details(current_user: UserDep,):
-#     pass
-
-    
-
+ 
