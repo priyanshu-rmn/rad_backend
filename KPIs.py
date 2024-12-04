@@ -1,3 +1,4 @@
+from collections import defaultdict
 from sqlmodel import Session, case, cast, select, func, Float, text
 
 from models import Application, ApplicationStatusEnum, Position, Stage
@@ -85,16 +86,24 @@ def get_recent_applications_count(db: Session, filters):
 
 def application_per_job_posting(db: Session, filters) :
     results = db.exec(
-        select(Position.title, func.count())
-        .join(Application, Application.position_id == Position.id)
-        .filter(
-            Position.department.in_(filters["departments"]),
-            Position.id.in_(filters["position_id"]),
-            Application.applied_at >= filters["start_date"],
-            Application.applied_at <= filters["end_date"]
-        )
-        .group_by(Position.title)
+    select(
+        Position.title,
+        func.to_char(Application.applied_at, 'YYYY-MM-DD').label('day'),  # Correct usage of to_char with the timestamp
+        func.count().label('application_count')
+    )
+    .join(Position, Application.position_id == Position.id)
+    .filter(
+        Position.department.in_(filters["departments"]),
+        Position.id.in_(filters["position_id"]),
+        Application.applied_at >= filters["start_date"],
+        Application.applied_at <= filters["end_date"]
+    )
+    .group_by(Position.title, func.to_char(Application.applied_at, 'YYYY-MM-DD'))
     ).all()
 
-    return {title: count for title,count in results}
+    res = defaultdict(dict)
+    for title, time , count in results:
+        res[title][time] = count
+        
 
+    return res

@@ -1,4 +1,5 @@
 # Hash Passwords Using Passlib
+import os
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -14,9 +15,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 import jwt
 from datetime import datetime, timedelta
 
-SECRET_KEY = "JWT_SECRET"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 100
+from dotenv import load_dotenv
+from pathlib import Path
+
+load_dotenv(dotenv_path=Path(".env"))
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM" )
+ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
 
 def create_access_token(data: dict):
     to_encode = data.copy()
